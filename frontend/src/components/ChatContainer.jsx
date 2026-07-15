@@ -362,16 +362,20 @@ const ChatContainer = ({
   }
 
   return (
-    <div className="flex flex-col flex-1 h-full max-h-full overflow-hidden bg-slate-50/40">
+    /* 
+      FIXED CONTAINER: Added 'h-[100dvh]' and fixed positioning layout 
+      so mobile browsers never cut off the message input box.
+    */
+    <div className="fixed inset-0 md:relative flex flex-col flex-1 h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50/40">
       {/* 1. COMPACT HEADER STRIP */}
-      <div className="flex-shrink-0 w-full bg-white px-4 py-2 sm:px-6 sm:py-2.5">
+      <div className="flex-shrink-0 w-full bg-white px-4 py-2 sm:px-6 sm:py-2.5 z-10 shadow-sm">
         <ChatHeader
           selectedUser={selectedUser}
           onlineUsers={onlineUsers}
           setSelectedUser={setSelectedUser}
           isTyping={isTyping}
           searchText={searchTerm}
-          setSearchText={setSearchTerm} // Instantly changes text input value
+          setSearchText={setSearchTerm}
         />
       </div>
 
@@ -382,14 +386,14 @@ const ChatContainer = ({
           chatLoading={chatLoading}
           user={user}
           messagesEndRef={messagesEndRef}
-          searchText={debouncedSearchText} // Receives the filtered value cleanly debounced
+          searchText={debouncedSearchText}
           handleDeleteForMe={handleDeleteForMe}
           handleDeleteForEveryone={handleDeleteForEveryone}
         />
       </div>
 
       {/* 3. PINNED BOTTOM ACTION INPUT */}
-      <div className="flex-shrink-0 w-full border-t border-slate-100 bg-white p-3 sm:p-4">
+      <div className="flex-shrink-0 w-full border-t border-slate-100 bg-white p-3 sm:p-4 pb-safe z-10">
         <MessageInput
           newMessage={newMessage}
           handleTyping={handleTyping}
