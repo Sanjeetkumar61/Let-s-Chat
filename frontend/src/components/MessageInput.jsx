@@ -16,6 +16,7 @@ const MessageInput = ({
 
   const pickerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -32,6 +33,9 @@ const MessageInput = ({
 
   const handleEmojiClick = (emojiData) => {
     handleTyping(newMessage + emojiData.emoji);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
   };
 
   const handleFileChange = (e) => {
@@ -44,34 +48,42 @@ const MessageInput = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    inputRef.current?.focus();
   };
 
-  const handleSendAction = () => {
+  const handleSendAction = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (newMessage.trim() || selectedFile) {
       handleSendMessage();
+
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
     }
   };
 
   const isImage = selectedFile && selectedFile.type.startsWith("image/");
 
   return (
-    /* Border-to-border layout shell with tight baseline alignment padding */
-    <div className="relative w-full bg-white px-3 py-2">
-      {/* Absolute full width bounding for emoji selection popover */}
+    /* Outer container: Desktop standard padding increased (md:py-3.5 md:px-5) */
+    <div className="relative w-full bg-white px-3 py-2 md:py-3.5 md:px-5">
       {showEmojiPicker && (
         <div
           ref={pickerRef}
-          className="absolute bottom-16 left-2 right-2 z-50 shadow-2xl rounded-xl overflow-hidden max-w-[calc(100vw-16px)]"
+          className="absolute bottom-16 md:bottom-20 left-2 right-2 md:left-5 md:right-5 z-50 shadow-2xl rounded-xl overflow-hidden max-w-[calc(100vw-16px)] md:max-w-[360px]"
         >
           <EmojiPicker
             onEmojiClick={handleEmojiClick}
             width="100%"
-            height={350}
+            height={380}
           />
         </div>
       )}
 
-      {/* Upload preview container */}
       {selectedFile && (
         <div className="mb-2 bg-slate-100 rounded-xl p-3 relative mx-1">
           <button
@@ -85,7 +97,7 @@ const MessageInput = ({
             <img
               src={URL.createObjectURL(selectedFile)}
               alt="Preview"
-              className="max-h-40 rounded-lg mx-auto object-contain"
+              className="max-h-40 md:max-h-52 rounded-lg mx-auto object-contain"
             />
           ) : (
             <div className="flex items-center gap-3">
@@ -103,13 +115,14 @@ const MessageInput = ({
         </div>
       )}
 
-      {/* Main Layout Strip: Full width row items */}
-      <div className="flex items-center gap-2 w-full">
-        <div className="flex flex-1 items-center bg-slate-100 rounded-full px-3 py-1.5 min-w-0 shadow-sm border border-slate-200/40">
+      {/* Main Bar Wrapper */}
+      <div className="flex items-center gap-2.5 md:gap-4 w-full">
+        {/* Capsule Input background: Desktop padding increased (md:py-3 md:px-5) */}
+        <div className="flex flex-1 items-center bg-slate-100 rounded-full px-3 py-1.5 md:py-3 md:px-5 min-w-0 shadow-sm border border-slate-200/40">
           <button
             type="button"
             onClick={() => setShowEmojiPicker((prev) => !prev)}
-            className="text-xl text-slate-500 hover:text-teal-600 transition flex-shrink-0 cursor-pointer p-1"
+            className="text-xl md:text-2xl text-slate-500 hover:text-teal-600 transition flex-shrink-0 cursor-pointer p-1"
           >
             <BsEmojiSmile />
           </button>
@@ -117,9 +130,9 @@ const MessageInput = ({
           <button
             type="button"
             onClick={() => fileInputRef.current.click()}
-            className="text-xl text-slate-500 hover:text-teal-600 transition flex-shrink-0 cursor-pointer p-1"
+            className="text-xl md:text-2xl text-slate-500 hover:text-teal-600 transition flex-shrink-0 cursor-pointer p-1 ml-1"
           >
-            <BsPaperclip className="rotate-45" />
+            <BsPaperclip className="rotate-180" />
           </button>
 
           <input
@@ -130,7 +143,9 @@ const MessageInput = ({
             onChange={handleFileChange}
           />
 
+          {/* Text Input: Desktop font size & padding balanced (md:text-[15px]) */}
           <input
+            ref={inputRef}
             type="text"
             placeholder="Type your message..."
             value={newMessage}
@@ -138,25 +153,28 @@ const MessageInput = ({
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                handleSendAction();
+                handleSendAction(e);
               }
             }}
-            className="flex-1 bg-transparent px-2 py-1 outline-none text-slate-700 placeholder:text-gray-400 text-sm border-0 focus:ring-0 min-w-0"
+            className="flex-1 bg-transparent px-2.5 py-1 outline-none text-slate-700 placeholder:text-gray-400 text-sm md:text-[15px] border-0 focus:ring-0 min-w-0"
           />
         </div>
 
-        {/* WhatsApp Circular Dynamic Send button */}
+        {/* Send Button: Desktop dimension scaled (md:w-12 md:h-12) */}
         <button
           type="button"
-          onClick={handleSendAction}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            handleSendAction(e);
+          }}
           disabled={!newMessage.trim() && !selectedFile}
-          className={`w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full transition-all duration-200 active:scale-95 cursor-pointer ${
+          className={`w-10 h-10 md:w-12 md:h-12 flex flex-shrink-0 items-center justify-center rounded-full transition-all duration-200 active:scale-95 cursor-pointer ${
             newMessage.trim() || selectedFile
               ? "bg-teal-600 text-white shadow-md hover:bg-teal-700"
               : "bg-slate-200 text-slate-400 border border-slate-300/20 cursor-not-allowed"
           }`}
         >
-          <IoSend size={18} className="ml-0.5" />
+          <IoSend className="ml-0.5 text-[18px] md:text-[21px]" />
         </button>
       </div>
     </div>

@@ -355,8 +355,7 @@ const ChatContainer = ({
 
   return (
     <div className="fixed inset-0 md:relative flex flex-col flex-1 h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50/40 w-full max-w-full">
-      {/* 1. HEADER (Keeps internal padding for content but fills width) */}
-      <div className="flex-shrink-0 w-full bg-white px-4 py-2 sm:px-6 sm:py-2.5 z-10 shadow-sm">
+      <div className="flex-shrink-0 w-full bg-white px-3 py-1 sm:px-4 sm:py-1.5 z-10 shadow-sm border-b border-slate-100">
         <ChatHeader
           selectedUser={selectedUser}
           onlineUsers={onlineUsers}
@@ -367,7 +366,7 @@ const ChatContainer = ({
         />
       </div>
 
-      {/* 2. DYNAMIC MESSAGE AREA (Paddings completely removed so bubbles can touch edges) */}
+      {/* 2. DYNAMIC MESSAGE AREA */}
       <div className="flex-1 min-h-0 overflow-y-auto w-full px-0 py-2">
         <MessageList
           messages={messages}
@@ -380,7 +379,7 @@ const ChatContainer = ({
         />
       </div>
 
-      {/* 3. PINNED BOTTOM ACTION BAR (Padding set to px-0 so input component touches borders) */}
+      {/* 3. PINNED BOTTOM ACTION BAR */}
       <div className="flex-shrink-0 w-full border-t border-slate-100 bg-white px-0 pt-2 pb-6 sm:pb-4 md:pb-4 z-20 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
         <MessageInput
           newMessage={newMessage}
