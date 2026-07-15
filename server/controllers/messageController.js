@@ -1,5 +1,5 @@
 import axios from "axios";
-import Message from "../models/Message.js";
+import Message from "../models/message.js";
 import { onlineUsers } from "../sockets/socketHandler.js";
 import { getIO } from "../sockets/socket.js";
 import cloudinary from "../config/cloudinary.js";

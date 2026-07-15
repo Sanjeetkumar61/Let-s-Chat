@@ -1,5 +1,5 @@
-import Group from "../models/Group.js";
-import Message from "../models/Message.js";
+import Group from "../models/group.js";
+import Message from "../models/message.js";
 import { getIO } from "../sockets/socket.js";
 import { onlineUsers } from "../sockets/socketHandler.js";
 
