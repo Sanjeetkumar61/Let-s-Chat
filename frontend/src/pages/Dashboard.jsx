@@ -17,13 +17,31 @@ const Dashboard = () => {
 
   const [users, setUsers] = useState([]);
   const [groups, setGroups] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
+
+  const [selectedUser, setSelectedUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem("active_chat");
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      console.log("Error parsing active_chat from localStorage", error);
+      return null;
+    }
+  });
+
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [unreadCounts, setUnreadCounts] = useState({});
   const unreadCountsStorageKey = user ? `unreadCounts:${user.id}` : null;
+
+  useEffect(() => {
+    if (selectedUser) {
+      localStorage.setItem("active_chat", JSON.stringify(selectedUser));
+    } else {
+      localStorage.removeItem("active_chat");
+    }
+  }, [selectedUser]);
 
   useEffect(() => {
     if (!unreadCountsStorageKey) return;
@@ -201,15 +219,14 @@ const Dashboard = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("active_chat");
     logout();
     navigate("/login");
   };
 
   return (
     <div className="h-screen w-screen fixed inset-0 bg-slate-100 font-sans text-slate-700 overflow-hidden antialiased flex items-center justify-center p-0 sm:p-4 md:p-6 lg:p-8">
-      {/* Main Container Card Frame */}
       <div className="w-full h-full max-w-[1600px] bg-white rounded-none sm:rounded-3xl border border-slate-200/60 shadow-2xl overflow-hidden flex min-h-0">
-        {/* SIDEBAR: Pinned on desktop (md+). Hidden on mobile ONLY if a user is actively selected */}
         <div
           className={`h-full w-full md:w-[360px] lg:w-[400px] flex-shrink-0 border-r border-slate-100 flex flex-col ${
             selectedUser ? "hidden md:flex" : "flex"
@@ -234,7 +251,6 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* CHAT CONTAINER: Fills remaining room on desktop. Fills complete screen on mobile if chat selected */}
         <div
           className={`h-full flex-grow min-h-0 overflow-hidden bg-slate-50/50 ${
             !selectedUser ? "hidden md:flex" : "flex flex-col"
