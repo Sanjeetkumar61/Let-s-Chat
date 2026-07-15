@@ -20,9 +20,12 @@ const MessageList = ({
   });
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 space-y-4 hide-scrollbar">
+    /* Removed p-5 completely; applied compact vertical layout with edge-to-edge horizontal limits */
+    <div className="flex-1 overflow-y-auto w-full px-0 py-2 space-y-1 hide-scrollbar">
       {chatLoading ? (
-        <p>Loading messages...</p>
+        <p className="text-center text-gray-400 mt-4 text-sm">
+          Loading messages...
+        </p>
       ) : filteredMessages.length > 0 ? (
         filteredMessages.map((msg) => (
           <MessageBubble
@@ -36,7 +39,7 @@ const MessageList = ({
         ))
       ) : (
         <div className="text-center text-gray-500 mt-10">
-          No matching messages found
+          {searchText ? "No matching messages found" : "No messages yet"}
         </div>
       )}
 

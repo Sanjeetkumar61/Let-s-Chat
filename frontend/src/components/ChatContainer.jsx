@@ -31,22 +31,17 @@ const ChatContainer = ({
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // States for search and debounced search
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
 
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
 
-  // 1. Debounce logic for the Header Searchbar
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchText(searchTerm);
     }, 300);
-
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [searchTerm]);
 
   useEffect(() => {
@@ -56,7 +51,6 @@ const ChatContainer = ({
     }
   }, [selectedUser]);
 
-  // 2. Strict Autoscroll mechanism for new messages
   useEffect(() => {
     if (messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,7 +60,6 @@ const ChatContainer = ({
   useEffect(() => {
     const handleReceiveMessage = async (message) => {
       if (!message) return;
-
       const isCurrentChat =
         selectedUser && String(message.senderId) === String(selectedUser._id);
       const isIncomingForCurrentUser =
@@ -114,7 +107,6 @@ const ChatContainer = ({
       clearTimeout(typingTimeout.current);
       typingTimeout.current = setTimeout(() => setIsTyping(false), 2000);
     };
-
     socket.on("userTyping", handleUserTyping);
     return () => socket.off("userTyping", handleUserTyping);
   }, [selectedUser]);
@@ -362,8 +354,8 @@ const ChatContainer = ({
   }
 
   return (
-    <div className="fixed inset-0 md:relative flex flex-col flex-1 h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50/40">
-      {/* 1. COMPACT HEADER STRIP */}
+    <div className="fixed inset-0 md:relative flex flex-col flex-1 h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50/40 w-full max-w-full">
+      {/* 1. HEADER (Keeps internal padding for content but fills width) */}
       <div className="flex-shrink-0 w-full bg-white px-4 py-2 sm:px-6 sm:py-2.5 z-10 shadow-sm">
         <ChatHeader
           selectedUser={selectedUser}
@@ -375,11 +367,8 @@ const ChatContainer = ({
         />
       </div>
 
-      {/* 
-        2. DYNAMIC MESSAGE AREA (WHATSAPP SPACING)
-        Changed 'py-3 sm:py-4' to 'py-2 px-4' to reduce overall layout gaps.
-      */}
-      <div className="flex-1 min-h-0 overflow-y-auto w-full px-4 py-2">
+      {/* 2. DYNAMIC MESSAGE AREA (Paddings completely removed so bubbles can touch edges) */}
+      <div className="flex-1 min-h-0 overflow-y-auto w-full px-0 py-2">
         <MessageList
           messages={messages}
           chatLoading={chatLoading}
@@ -391,8 +380,8 @@ const ChatContainer = ({
         />
       </div>
 
-      {/* 3. PINNED BOTTOM ACTION INPUT */}
-      <div className="flex-shrink-0 w-full border-t border-slate-100 bg-white px-3 pt-3 pb-6 sm:pb-4 md:pb-4 z-20 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
+      {/* 3. PINNED BOTTOM ACTION BAR (Padding set to px-0 so input component touches borders) */}
+      <div className="flex-shrink-0 w-full border-t border-slate-100 bg-white px-0 pt-2 pb-6 sm:pb-4 md:pb-4 z-20 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
         <MessageInput
           newMessage={newMessage}
           handleTyping={handleTyping}
