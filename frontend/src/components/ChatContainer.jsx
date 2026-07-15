@@ -21,6 +21,8 @@ const ChatContainer = ({
   onlineUsers,
   setSelectedUser,
   updateLastMessage,
+  updateUnreadCounts,
+  clearUnreadCount,
 }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -48,14 +50,17 @@ const ChatContainer = ({
   useEffect(() => {
     const handleReceiveMessage = async (message) => {
       if (!message) return;
-      if (
-        selectedUser &&
-        (String(message.senderId) === String(selectedUser._id) ||
-          String(message.receiverId) === String(selectedUser._id))
-      ) {
+
+      const isCurrentChat =
+        selectedUser && String(message.senderId) === String(selectedUser._id);
+      const isIncomingForCurrentUser =
+        String(message.receiverId) === String(user.id);
+
+      if (isCurrentChat) {
         setMessages((prev) => {
           const exists = prev.some((msg) => msg._id === message._id);
           if (exists) return prev;
+
           return [...prev, message];
         });
       }
@@ -65,24 +70,26 @@ const ChatContainer = ({
         message.text ||
         (message.file ? "📎 Attachment" : "");
 
-      updateLastMessage(
-        message.senderId,
-        textContent,
-        message.createdAt || new Date().toISOString(),
-      );
+      const timestamp = message.createdAt || new Date().toISOString();
 
-      if (String(message.receiverId) === String(user.id)) {
+      const chatId =
+        String(message.senderId) === String(user.id)
+          ? message.receiverId
+          : message.senderId;
+
+      updateLastMessage(chatId, textContent, timestamp);
+
+      if (isIncomingForCurrentUser) {
         try {
           if (message.status === "sent") {
             await markAsDelivered(message._id);
           }
 
-          if (
-            selectedUser &&
-            String(selectedUser._id) === String(message.senderId)
-          ) {
+          if (isCurrentChat) {
             await markAsRead(message._id);
           }
+
+          await updateUnreadCounts?.();
         } catch (error) {
           console.log(error);
         }
@@ -94,7 +101,7 @@ const ChatContainer = ({
     return () => {
       socket.off("receiveMessage", handleReceiveMessage);
     };
-  }, [selectedUser, updateLastMessage, user]);
+  }, [selectedUser, updateLastMessage, user, updateUnreadCounts]);
 
   useEffect(() => {
     const handleUserTyping = ({ senderId }) => {
@@ -268,6 +275,7 @@ const ChatContainer = ({
   }, []);
 
   const fetchMessages = async () => {
+    if (!selectedUser) return;
     try {
       setChatLoading(true);
       let data;
@@ -285,18 +293,18 @@ const ChatContainer = ({
         for (const message of data.messages) {
           if (
             String(message.receiverId) === String(user.id) &&
-            message.status === "sent"
+            message.status !== "read"
           ) {
-            await markAsDelivered(message._id);
-          }
+            if (message.status === "sent") {
+              await markAsDelivered(message._id);
+            }
 
-          if (
-            String(message.receiverId) === String(user.id) &&
-            message.status === "delivered"
-          ) {
             await markAsRead(message._id);
           }
         }
+
+        clearUnreadCount?.(selectedUser._id);
+        await updateUnreadCounts?.();
       }
     } catch (error) {
       console.log(error);
@@ -361,7 +369,12 @@ const ChatContainer = ({
 
         const timestamp = data.data.createdAt || new Date().toISOString();
 
-        updateLastMessage(selectedUser._id, textContent, timestamp);
+        const chatId =
+          selectedUser.type === "group"
+            ? selectedUser._id
+            : data.data.receiverId;
+
+        updateLastMessage(chatId, textContent, timestamp);
       }
 
       setNewMessage("");
@@ -414,12 +427,11 @@ const ChatContainer = ({
 
   if (!selectedUser) {
     return (
-      <div className="hidden md:flex flex-1 items-center justify-center bg-slate-50">
+      <div className="hidden md:flex flex-1 items-center justify-center bg-slate-50 h-screen">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-slate-700">
             Welcome {user?.name}
           </h2>
-
           <p className="text-gray-500 mt-3">
             Select a user or group to start chatting
           </p>
@@ -429,34 +441,43 @@ const ChatContainer = ({
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-slate-50">
-      <ChatHeader
-        selectedUser={selectedUser}
-        onlineUsers={onlineUsers}
-        setSelectedUser={setSelectedUser}
-        isTyping={isTyping}
-        searchText={searchText}
-        setSearchText={setSearchText}
-      />
+    <div className="flex flex-1 flex-col bg-slate-50 h-screen w-full overflow-hidden">
+      {/* Header element */}
+      <div className="flex-shrink-0">
+        <ChatHeader
+          selectedUser={selectedUser}
+          onlineUsers={onlineUsers}
+          setSelectedUser={setSelectedUser}
+          isTyping={isTyping}
+          searchText={searchText}
+          setSearchText={setSearchText}
+        />
+      </div>
 
-      <MessageList
-        messages={messages}
-        chatLoading={chatLoading}
-        user={user}
-        messagesEndRef={messagesEndRef}
-        searchText={searchText}
-        handleDeleteForMe={handleDeleteForMe}
-        handleDeleteForEveryone={handleDeleteForEveryone}
-      />
+      {/* Message List area container */}
+      <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col">
+        <MessageList
+          messages={messages}
+          chatLoading={chatLoading}
+          user={user}
+          messagesEndRef={messagesEndRef}
+          searchText={searchText}
+          handleDeleteForMe={handleDeleteForMe}
+          handleDeleteForEveryone={handleDeleteForEveryone}
+        />
+      </div>
 
-      <MessageInput
-        newMessage={newMessage}
-        handleTyping={handleTyping}
-        handleSendMessage={handleSendMessage}
-        selectedFile={selectedFile}
-        setSelectedFile={setSelectedFile}
-        isUploading={isUploading}
-      />
+      {/* RESTORED INPUT AREA: Pinned perfectly at the bottom layout container */}
+      <div className="flex-shrink-0 bg-white border-t border-slate-100 p-3 md:p-4">
+        <MessageInput
+          newMessage={newMessage}
+          handleTyping={handleTyping}
+          handleSendMessage={handleSendMessage}
+          selectedFile={selectedFile}
+          setSelectedFile={setSelectedFile}
+          isUploading={isUploading}
+        />
+      </div>
     </div>
   );
 };

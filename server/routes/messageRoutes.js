@@ -1,5 +1,7 @@
 import { Router } from "express";
 import authMiddleware from "../middlewares/authMiddleware.js";
+import upload from "../middlewares/upload.js";
+
 import {
   sendMessage,
   getMessages,
@@ -9,11 +11,12 @@ import {
   openFile,
   deleteForMe,
   deleteForEveryone,
+  getUnreadCounts,
 } from "../controllers/messageController.js";
-import upload from "../middlewares/upload.js";
 
 const router = Router();
 
+// Send Message
 router.post(
   "/send/:receiverId",
   authMiddleware,
@@ -21,26 +24,56 @@ router.post(
   sendMessage
 );
 
-router.get("/:receiverId", authMiddleware, getMessages);
+// Get Unread Counts (Keep this ABOVE /:receiverId)
+router.get(
+  "/unread/counts",
+  authMiddleware,
+  getUnreadCounts
+);
 
-router.put("/delivered/:messageId", authMiddleware, markAsDelivered);
+// Get Chat Messages
+router.get(
+  "/:receiverId",
+  authMiddleware,
+  getMessages
+);
 
-router.put("/read/:messageId", authMiddleware, markAsRead);
+// Delivery Status
+router.put(
+  "/delivered/:messageId",
+  authMiddleware,
+  markAsDelivered
+);
 
-router.get("/download/:messageId", authMiddleware, downloadFile);
+// Read Status
+router.put(
+  "/read/:messageId",
+  authMiddleware,
+  markAsRead
+);
 
+// Download File
+router.get(
+  "/download/:messageId",
+  authMiddleware,
+  downloadFile
+);
+
+// Open File
 router.get(
   "/open/:messageId",
   authMiddleware,
   openFile
 );
 
+// Delete for Me
 router.delete(
   "/delete/me/:messageId",
   authMiddleware,
   deleteForMe
 );
 
+// Delete for Everyone
 router.delete(
   "/delete/everyone/:messageId",
   authMiddleware,

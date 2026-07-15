@@ -134,7 +134,7 @@ const ChatHeader = ({
                   placeholder="Search messages..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-100 rounded-lg outline-none text-xs font-medium text-slate-700 placeholder-slate-400 transition-all focus:bg-white focus:border-teal-400"
+                  className="w-full pl-9 pr-5 py-1.5 bg-slate-50/80 border border-slate-100 rounded-lg outline-none text-xs font-medium text-slate-700 placeholder-slate-400 transition-all focus:bg-white focus:border-teal-400"
                   autoFocus
                 />
               </div>

@@ -6,6 +6,7 @@ import socket from "../services/socket";
 
 import { getAllUsers } from "../services/userService";
 import { getGroups } from "../services/groupService";
+import { getUnreadCounts } from "../services/messageService";
 
 import Sidebar from "../components/Sidebar";
 import ChatContainer from "../components/ChatContainer";
@@ -26,12 +27,52 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const unreadCountsStorageKey = user ? `unreadCounts:${user.id}` : null;
+
+  useEffect(() => {
+    if (!unreadCountsStorageKey) return;
+
+    try {
+      const storedCounts = localStorage.getItem(unreadCountsStorageKey);
+
+      if (storedCounts) {
+        setUnreadCounts(JSON.parse(storedCounts) || {});
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }, [unreadCountsStorageKey]);
+
+  useEffect(() => {
+    if (!unreadCountsStorageKey) return;
+
+    try {
+      localStorage.setItem(
+        unreadCountsStorageKey,
+        JSON.stringify(unreadCounts),
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  }, [unreadCounts, unreadCountsStorageKey]);
 
   useEffect(() => {
     if (!user) return;
 
-    fetchUsers();
-    fetchGroups();
+    const loadData = async () => {
+      setLoading(true);
+
+      try {
+        await Promise.all([fetchUsers(), fetchGroups(), fetchUnreadCounts()]);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, [user]);
 
   useEffect(() => {
@@ -41,7 +82,7 @@ const Dashboard = () => {
 
     socket.emit("registerUser", user.id);
 
-    if (groups && groups.length > 0) {
+    if (groups.length > 0) {
       groups.forEach((group) => {
         socket.emit("joinGroup", group._id);
       });
@@ -51,9 +92,30 @@ const Dashboard = () => {
       setOnlineUsers(users);
     });
 
+    socket.on("receiveMessage", (message) => {
+      if (!message) return;
+
+      if (String(message.receiverId) !== String(user.id)) return;
+
+      if (
+        selectedUser &&
+        String(selectedUser._id) === String(message.senderId)
+      ) {
+        return;
+      }
+
+      const senderId = String(message.senderId);
+
+      setUnreadCounts((prev) => ({
+        ...prev,
+        [senderId]: Number(prev[senderId] || 0) + 1,
+      }));
+    });
+
     socket.on("receiveGroupMessage", ({ groupId, message }) => {
       const textContent =
         message.text || (message.file ? "📎 File attachment" : "");
+
       updateLastMessage(
         groupId,
         textContent,
@@ -75,6 +137,7 @@ const Dashboard = () => {
 
     socket.on("groupCreated", (group) => {
       socket.emit("joinGroup", group._id);
+
       setGroups((prev) => {
         const exists = prev.some((g) => g._id === group._id);
 
@@ -86,18 +149,17 @@ const Dashboard = () => {
 
     return () => {
       socket.off("getOnlineUsers");
+      socket.off("receiveMessage");
       socket.off("receiveGroupMessage");
       socket.off("userTyping");
       socket.off("groupCreated");
 
       socket.disconnect();
     };
-  }, [user, groups?.length]);
+  }, [user, groups.length, selectedUser]);
 
   const fetchUsers = async () => {
     try {
-      setLoading(true);
-
       const data = await getAllUsers();
 
       const filteredUsers = data.users.filter((item) => item._id !== user?.id);
@@ -105,19 +167,50 @@ const Dashboard = () => {
       setUsers(filteredUsers);
     } catch (error) {
       console.log(error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchGroups = async () => {
     try {
       const data = await getGroups();
-
       setGroups(data.groups);
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const fetchUnreadCounts = async () => {
+    try {
+      const data = await getUnreadCounts();
+
+      setUnreadCounts((prev) => {
+        const serverCounts = data.counts || {};
+
+        if (Object.keys(serverCounts).length === 0) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          ...serverCounts,
+        };
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const clearUnreadCount = (chatId) => {
+    if (!chatId) return;
+
+    setUnreadCounts((prev) => {
+      if (!prev?.[chatId]) return prev;
+
+      const next = { ...prev };
+      delete next[chatId];
+
+      return next;
+    });
   };
 
   const updateLastMessage = (id, message, time) => {
@@ -176,7 +269,9 @@ const Dashboard = () => {
       <div className="h-full w-full p-0 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto flex flex-col justify-center">
         <div className="h-full w-full bg-white/70 backdrop-blur-md sm:rounded-3xl border border-white/80 shadow-2xl shadow-slate-200/80 overflow-hidden flex relative">
           <div
-            className={`h-full w-full md:w-[360px] lg:w-[400px] flex-shrink-0 border-r border-slate-100/80 transition-all duration-300 ${selectedUser ? "hidden md:flex" : "flex"}`}
+            className={`h-full w-full md:w-[360px] lg:w-[400px] flex-shrink-0 border-r border-slate-100/80 transition-all duration-300 ${
+              selectedUser ? "hidden md:flex" : "flex"
+            }`}
           >
             <Sidebar
               user={user}
@@ -193,11 +288,14 @@ const Dashboard = () => {
               handleLogout={handleLogout}
               search={search}
               setSearch={setSearch}
+              unreadCounts={unreadCounts}
             />
           </div>
 
           <div
-            className={`h-full flex-grow transition-all duration-300 bg-white/40 ${!selectedUser ? "hidden md:flex" : "flex"}`}
+            className={`h-full flex-grow transition-all duration-300 bg-white/40 ${
+              !selectedUser ? "hidden md:flex" : "flex"
+            }`}
           >
             <ChatContainer
               user={user}
@@ -205,6 +303,8 @@ const Dashboard = () => {
               setSelectedUser={setSelectedUser}
               onlineUsers={onlineUsers}
               updateLastMessage={updateLastMessage}
+              updateUnreadCounts={fetchUnreadCounts}
+              clearUnreadCount={clearUnreadCount}
             />
           </div>
         </div>

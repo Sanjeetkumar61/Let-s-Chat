@@ -126,3 +126,9 @@ export const deleteForEveryone = async (messageId) => {
 
   return response.data;
 };
+
+export const getUnreadCounts = async () => {
+  const response = await api.get("/messages/unread/counts");
+
+  return response.data;
+};

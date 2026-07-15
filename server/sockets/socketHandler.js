@@ -4,7 +4,7 @@ const socketHandler = (io) => {
   io.on("connection", (socket) => {
 
     socket.on("registerUser", (userId) => {
-      onlineUsers.set(userId, socket.id);
+      onlineUsers.set(String(userId), socket.id);
 
       socket.join(userId);
 
@@ -15,7 +15,7 @@ const socketHandler = (io) => {
     });
 
     socket.on("typing", ({ senderId, receiverId }) => {
-      const receiverSocketId = onlineUsers.get(receiverId);
+      const receiverSocketId = onlineUsers.get(String(receiverId));
 
       if (!receiverSocketId) return;
 

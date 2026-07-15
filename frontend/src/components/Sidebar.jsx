@@ -43,6 +43,7 @@ const Sidebar = ({
   handleLogout,
   search,
   setSearch,
+  unreadCounts,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -80,7 +81,6 @@ const Sidebar = ({
       ...u,
       type: "user",
     })),
-
     ...groups.map((g) => ({
       ...g,
       type: "group",
@@ -88,7 +88,6 @@ const Sidebar = ({
   ].sort((a, b) => {
     const timeA = new Date(a.lastMessageTime || a.createdAt || 0);
     const timeB = new Date(b.lastMessageTime || b.createdAt || 0);
-
     return timeB - timeA;
   });
 
@@ -102,9 +101,10 @@ const Sidebar = ({
       <div
         className={`${
           selectedUser ? "hidden md:flex" : "flex"
-        } w-full h-full flex-col bg-white`}
+        } w-full h-screen flex-col bg-white border-r border-slate-100 overflow-hidden`}
       >
-        <div className="p-5">
+        {/* Header Section */}
+        <div className="p-5 flex-shrink-0">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 overflow-hidden">
               <div className="w-11 h-11 bg-white rounded-xl border border-slate-100 flex items-center justify-center flex-shrink-0 shadow-xs p-1">
@@ -171,6 +171,7 @@ const Sidebar = ({
             </div>
           </div>
 
+          {/* Search Bar */}
           <div className="relative flex items-center mt-4">
             <span className="absolute left-4 text-slate-400">
               <svg
@@ -197,7 +198,8 @@ const Sidebar = ({
           </div>
         </div>
 
-        <div className="px-5 pb-4">
+        {/* Action Buttons */}
+        <div className="px-5 pb-4 flex-shrink-0">
           <button
             onClick={() => setShowCreateGroup(true)}
             className="w-full py-2.5 flex items-center justify-center gap-2 text-xs font-bold text-white rounded-xl bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-600 hover:to-sky-600 shadow-md shadow-teal-500/10 transition-all duration-200 cursor-pointer"
@@ -219,7 +221,8 @@ const Sidebar = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {/* Chats List Stream - FIXED SCROLL AND PADDING FOR PHONES */}
+        <div className="flex-1 overflow-y-auto pb-24 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center pt-12 text-slate-400 gap-2">
               <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
@@ -239,6 +242,10 @@ const Sidebar = ({
                 : false;
               const isSelected = selectedUser?._id === item._id;
 
+              const unreadCount =
+                item.type === "user"
+                  ? Number(unreadCounts?.[item._id] || 0)
+                  : 0;
               let typingText = "";
               let isCurrentlyTyping = false;
 
@@ -276,77 +283,81 @@ const Sidebar = ({
                 item.latestMessage ||
                 item.lastMessageText ||
                 `${item.members?.length || 0} Members`;
-              const unreadCount = item.unreadCount || 0;
 
               return (
                 <div
                   key={item._id}
                   onClick={() => setSelectedUser(item)}
-                  className={`flex items-center justify-between px-5 py-3.5 cursor-pointer transition-all duration-150 relative ${
+                  className={`flex items-center gap-3.5 px-5 py-3 cursor-pointer transition-all duration-150 border-b border-slate-50/60 ${
                     isSelected ? "bg-slate-100" : "hover:bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-center gap-3.5 flex-1 overflow-hidden">
+                  {/* Left Column: Avatar Container */}
+                  <div
+                    onClick={(e) => handleAvatarClick(e, item, isGroup)}
+                    className="relative flex-shrink-0 group cursor-pointer"
+                  >
                     <div
-                      onClick={(e) => handleAvatarClick(e, item, isGroup)}
-                      className="relative flex-shrink-0 group cursor-pointer"
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm shadow-xs text-white transition-transform active:scale-95 ${getAvatarBgColor(
+                        item._id || item.name,
+                        isGroup,
+                      )}`}
                     >
-                      <div
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm shadow-sm text-white transition-transform active:scale-95 ${getAvatarBgColor(item._id || item.name, isGroup)}`}
-                      >
-                        {isGroup ? (
-                          <HiUserGroup size={20} />
-                        ) : (
-                          <span className="uppercase tracking-wider">
-                            {item.name.charAt(0)}
-                          </span>
-                        )}
-                      </div>
+                      {isGroup ? (
+                        <HiUserGroup size={20} />
+                      ) : (
+                        <span className="uppercase tracking-wider">
+                          {item.name.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+                    {!isGroup && isOnline && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-emerald-400 transition-colors duration-300" />
+                    )}
+                  </div>
 
-                      {!isGroup && isOnline && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white bg-emerald-400 transition-colors duration-300" />
+                  {/* Right Column: Dynamic Data Core */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    {/* Top Row: Title & Timestamp */}
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-sm text-slate-700 truncate">
+                        {item.name}
+                      </h3>
+                      {item.lastMessageTime && (
+                        <span className="text-[11px] text-slate-400 whitespace-nowrap flex-shrink-0">
+                          {new Date(item.lastMessageTime).toLocaleTimeString(
+                            [],
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
+                        </span>
                       )}
                     </div>
 
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <h3 className="font-semibold text-sm text-slate-700 truncate">
-                          {item.name}
-                        </h3>
-                        {(item.lastMessageTime || item.createdAt) && (
-                          <span className="text-[10px] font-medium text-slate-400 flex-shrink-0">
-                            {new Date(
-                              item.lastMessageTime || item.createdAt,
-                            ).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                      </div>
+                    {/* Bottom Row: Message/Typing Preview & Counter */}
+                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                      <p
+                        className={`text-xs truncate flex-1 min-w-0 ${
+                          isCurrentlyTyping
+                            ? "text-emerald-500 font-medium animate-pulse"
+                            : "text-slate-400"
+                        }`}
+                      >
+                        {isCurrentlyTyping
+                          ? typingText
+                          : isGroup
+                            ? groupDisplayMessage
+                            : item.lastMessage ||
+                              (isOnline ? "Online" : "Offline")}
+                      </p>
 
-                      <div className="flex items-center justify-between gap-2 mt-0.5">
-                        <p
-                          className={`text-xs truncate flex-1 ${
-                            isCurrentlyTyping
-                              ? "text-emerald-500 font-semibold animate-pulse"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          {isCurrentlyTyping
-                            ? typingText
-                            : isGroup
-                              ? groupDisplayMessage
-                              : item.lastMessage ||
-                                (isOnline ? "Online" : "Offline")}
-                        </p>
-
-                        {!isSelected && unreadCount > 0 && (
-                          <span className="min-w-[18px] h-[18px] px-1 bg-emerald-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center shadow-sm animate-scaleIn">
-                            {unreadCount}
-                          </span>
-                        )}
-                      </div>
+                      {!isSelected && unreadCount > 0 && (
+                        <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -356,6 +367,7 @@ const Sidebar = ({
         </div>
       </div>
 
+      {/* Modals Containers */}
       <CreateGroupModal
         open={showCreateGroup}
         users={users}

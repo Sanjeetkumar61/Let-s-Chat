@@ -413,3 +413,45 @@ export const deleteForEveryone = async (req, res) => {
     });
   }
 };
+
+export const getUnreadCounts = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const unread = await Message.aggregate([
+      {
+        $match: {
+          receiverId: userId,
+          status: { $ne: "read" },
+          groupId: null,
+          deletedForEveryone: false,
+          deletedFor: { $ne: userId },
+        },
+      },
+      {
+        $group: {
+          _id: "$senderId",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const counts = {};
+
+    unread.forEach((item) => {
+      counts[item._id.toString()] = item.count;
+    });
+
+    res.status(200).json({
+      success: true,
+      counts,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
