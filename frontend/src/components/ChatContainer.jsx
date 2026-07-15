@@ -42,7 +42,7 @@ const ChatContainer = ({
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchText(searchTerm);
-    }, 300); // 300ms delay
+    }, 300);
 
     return () => {
       clearTimeout(handler);
@@ -52,7 +52,7 @@ const ChatContainer = ({
   useEffect(() => {
     if (selectedUser) {
       fetchMessages();
-      setSearchTerm(""); // Reset search when switching users
+      setSearchTerm("");
     }
   }, [selectedUser]);
 
@@ -362,10 +362,6 @@ const ChatContainer = ({
   }
 
   return (
-    /* 
-      FIXED CONTAINER: Added 'h-[100dvh]' and fixed positioning layout 
-      so mobile browsers never cut off the message input box.
-    */
     <div className="fixed inset-0 md:relative flex flex-col flex-1 h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50/40">
       {/* 1. COMPACT HEADER STRIP */}
       <div className="flex-shrink-0 w-full bg-white px-4 py-2 sm:px-6 sm:py-2.5 z-10 shadow-sm">
@@ -379,8 +375,11 @@ const ChatContainer = ({
         />
       </div>
 
-      {/* 2. DYNAMIC MESSAGE AREA */}
-      <div className="flex-1 min-h-0 overflow-y-auto w-full px-4 py-3 sm:px-6 sm:py-4">
+      {/* 
+        2. DYNAMIC MESSAGE AREA (WHATSAPP SPACING)
+        Changed 'py-3 sm:py-4' to 'py-2 px-4' to reduce overall layout gaps.
+      */}
+      <div className="flex-1 min-h-0 overflow-y-auto w-full px-4 py-2">
         <MessageList
           messages={messages}
           chatLoading={chatLoading}
@@ -393,7 +392,7 @@ const ChatContainer = ({
       </div>
 
       {/* 3. PINNED BOTTOM ACTION INPUT */}
-      <div className="flex-shrink-0 w-full border-t border-slate-100 bg-white p-3 sm:p-4 pb-safe z-10">
+      <div className="flex-shrink-0 w-full border-t border-slate-100 bg-white px-3 pt-3 pb-6 sm:pb-4 md:pb-4 z-20 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
         <MessageInput
           newMessage={newMessage}
           handleTyping={handleTyping}
